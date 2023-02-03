@@ -31,10 +31,15 @@ async function get_moves(page) {
         for (let i = 0; i < moves.length; i++) {
             let move = moves[i];
             data[i] = [];
-
+            
             for (let y = 0; y < move.children.length; y++) {
                 let child = move.children[y];
+                console.log(child);
                 data[i][y] = {color: child.classList[0], pos: child.innerText};
+            }
+            let result = move.querySelector(".game-result");
+            if (result) {
+                data[i][data[i].length - 1] = {color: result.classList[0], pos: result.innerText, result: true};
             }
         }
         return data;
@@ -76,6 +81,7 @@ async function feedback_game(page, game) {
         if (last_moves == undefined) { console.log("last moves undefined"); break; } 
         let last_move = last_moves[last_moves.length - 1];
 
+        if (last_move.color.substring(5) == "time-") continue;
         console.log(last_move);
 
         let highlights = await get_highlights(page);
@@ -87,7 +93,7 @@ async function feedback_game(page, game) {
 
         if (place == null) {
             game.click(".square-" + highlights[0]);
-            await game.waitForSelector(".square-" + highlights[1]);
+            await game.waitForSelector(".square-" + highlights[1]); // should check for hint each time after click just to make sure click is registered
             await sleep(10);
             game.click(".square-" + highlights[1]);
             await sleep(50);
@@ -104,6 +110,10 @@ async function feedback_game(page, game) {
             console.log(last_move.color + ": " + highlights[1] + " -> " + highlights[0]);
             //await sleep(5000);
             //console.log(last_move.color + ": " + highlights[1] + " -> " + highlights[0]);
+        }
+
+        if (last_move.result) {
+            break;
         }
 
         //page.click('.square-57');
@@ -126,6 +136,7 @@ async function feedback_game(page, game) {
             else
                 console.log(last_move.color + ": " + charmove[0] + " -> " + charmove[1] + " (" + last_move.pos + ")");*/
     }
+    return false;
 }
 
 (async() => {
@@ -137,34 +148,40 @@ async function feedback_game(page, game) {
     await saveCookie(game);
     
 
-    const browser = await puppeteer.launch({defaultViewport: null, headless: false, args: [ "--start-maximized" ]});
-    const page = await browser.newPage();
-    await page.goto("https://www.chess.com/play/computer");
+    while (true) {
+        const browser = await puppeteer.launch({defaultViewport: null, headless: false, args: [ "--start-maximized" ]});
+        const page = await browser.newPage();
+        await page.goto("https://www.chess.com/play/computer");
 
-    /*await page.waitForSelector("#username");
-    await page.$eval("#username", el => el.value = "nick.notwaeeb@gmail.com");
-    await page.$eval("#password", el => el.value = "Robot123");
-    await page.click("#_remember_me");
-    await page.click("#login");
+        /*await page.waitForSelector("#username");
+        await page.$eval("#username", el => el.value = "nick.notwaeeb@gmail.com");
+        await page.$eval("#password", el => el.value = "Robot123");
+        await page.click("#_remember_me");
+        await page.click("#login");
 
-    //await page.waitForNavigation(); */
+        //await page.waitForNavigation(); */
 
-    await waitAndClick(page, ".ui_outside-close-component");
-    //await waitAndClick(page, "[data-chess-src='https://images.chesscomfiles.com/uploads/v1/user/212792427.43bc219b.200x200o.48fe7b579d3a.png']"); //mewtens
-    await waitAndClick(page, "[data-chess-src='https://images.chesscomfiles.com/uploads/v1/user/232238735.11a67669.200x200o.98859ab5ec43.png']"); // agent chess
-    //await waitAndClick(page, "[data-chess-src='https://images.chesscomfiles.com/uploads/v1/user/109757776.54a6d484.200x200o.aadc7de54ee7.png']"); // danya
-    await waitAndClick(page, ".ui_v5-button-component.ui_v5-button-primary.ui_v5-button-large.selection-menu-button");
-    
-    const play = prompt("what are they playing as? ") == "b" ? "black" : "white"; 
-    await waitAndClick(page, "[data-cy='" + play + "']");
+        await waitAndClick(page, ".ui_outside-close-component");
+        //await waitAndClick(page, "[data-chess-src='https://images.chesscomfiles.com/uploads/v1/user/212792427.43bc219b.200x200o.48fe7b579d3a.png']"); //mewtens
+        await waitAndClick(page, "[data-chess-src='https://images.chesscomfiles.com/uploads/v1/user/232238735.11a67669.200x200o.98859ab5ec43.png']"); // agent chess
+        //await waitAndClick(page, "[data-chess-src='https://images.chesscomfiles.com/uploads/v1/user/109757776.54a6d484.200x200o.aadc7de54ee7.png']"); // danya
+        await waitAndClick(page, ".ui_v5-button-component.ui_v5-button-primary.ui_v5-button-large.selection-menu-button");
+        
+        const play = prompt("what are they playing as? ") == "b" ? "black" : "white"; 
+        await waitAndClick(page, "[data-cy='" + play + "']");
 
-    await waitAndClick(page, ".ui_v5-button-component.ui_v5-button-primary.ui_v5-button-large.ui_v5-button-full");
+        await waitAndClick(page, ".ui_v5-button-component.ui_v5-button-primary.ui_v5-button-large.ui_v5-button-full");
 
-    //const moves = await get_moves(page);
-    //console.log(moves);
+        //const moves = await get_moves(page);
+        //console.log(moves);
 
-    feedback_game(page, game);
-    feedback_game(game, page);
+        feedback_game(page, game);
+        if (await feedback_game(game, page) == false) {
+            console.log("game result");
+            prompt("ready to play again? ");
+            browser.close();
+        }
+    }
 
 
     // dont do this while loop as highlgihts occur when selecting a or right clicking board. for right clcik you can check color.
