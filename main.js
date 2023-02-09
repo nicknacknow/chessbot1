@@ -182,6 +182,10 @@ async function feedback_game(page, game) {
 
     // need to do when pawn reaches other side and become queen
 
+    // https://support.chess.com/article/684-how-can-i-play-the-computer-from-a-custom-position#:~:text=Play%20from%20a%20position%20in%20one%20of%20your%20games&text=Once%20you're%20in%20the,point%2C%20but%20versus%20the%20computer!
+    // https://www.chessgames.com/fenhelp.html
+    // to recover from crash recreate the chessboard on the Learn -> Analysis thing. you are able to input FEN notation which can be copied from the live game. good luck
+
     //let a = await page.evaluate(() => document.querySelector(".button.auth.login.ui_v5-button-component.ui_v5-button-primary.login-modal-trigger").click())
 })();
 
