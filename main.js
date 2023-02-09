@@ -81,6 +81,9 @@ async function feedback_game(page, game) {
         if (last_moves == undefined) { console.log("last moves undefined"); break; } 
         let last_move = last_moves[last_moves.length - 1];
 
+        if (last_move.result) { // check for win another way cuz gotta wait til game review for this
+            break;
+        }
         if (last_move.color.substring(5) == "time-") continue;
         console.log(last_move);
 
@@ -92,6 +95,7 @@ async function feedback_game(page, game) {
         }, highlights[0]);
 
         if (place == null) {
+            await game.waitForSelector(".square-" + highlights[0]);
             game.click(".square-" + highlights[0]);
             await game.waitForSelector(".square-" + highlights[1]); // should check for hint each time after click just to make sure click is registered
             await sleep(10);
@@ -101,6 +105,7 @@ async function feedback_game(page, game) {
             console.log(last_move.color + ": " + highlights[0] + " -> " + highlights[1]);
         }
         else {
+            await game.waitForSelector(".square-" + highlights[1]);
             game.click(".square-" + highlights[1]);
             await game.waitForSelector(".square-" + highlights[0]);
             await sleep(10);
@@ -108,33 +113,7 @@ async function feedback_game(page, game) {
             await sleep(50);
 
             console.log(last_move.color + ": " + highlights[1] + " -> " + highlights[0]);
-            //await sleep(5000);
-            //console.log(last_move.color + ": " + highlights[1] + " -> " + highlights[0]);
         }
-
-        if (last_move.result) {
-            break;
-        }
-
-        //page.click('.square-57');
-        //await sleep(5000);
-        //page.click('.square-55');
-
-        /*if (last_move.pos == "O-O") {
-            const place = await page.evaluate((piece)=> {
-                return document.querySelector(".board").querySelector(".piece.square-" + piece);
-            }, highlights[0]);
-
-            if (place == null)
-                console.log(last_move.color + ": " + charmove[0] + " -> " + charmove[1]);
-            else
-                console.log(last_move.color + ": " + charmove[1] + " -> " + charmove[0]);
-        }
-        else
-            if (last_move.pos.includes(charmove[0]))
-                console.log(last_move.color + ": " + charmove[1] + " -> " + charmove[0] + " (" + last_move.pos + ")");
-            else
-                console.log(last_move.color + ": " + charmove[0] + " -> " + charmove[1] + " (" + last_move.pos + ")");*/
     }
     return false;
 }
@@ -165,8 +144,20 @@ async function feedback_game(page, game) {
         //await waitAndClick(page, "[data-chess-src='https://images.chesscomfiles.com/uploads/v1/user/212792427.43bc219b.200x200o.48fe7b579d3a.png']"); //mewtens
         await waitAndClick(page, "[data-chess-src='https://images.chesscomfiles.com/uploads/v1/user/232238735.11a67669.200x200o.98859ab5ec43.png']"); // agent chess
         //await waitAndClick(page, "[data-chess-src='https://images.chesscomfiles.com/uploads/v1/user/109757776.54a6d484.200x200o.aadc7de54ee7.png']"); // danya
-        await waitAndClick(page, ".ui_v5-button-component.ui_v5-button-primary.ui_v5-button-large.selection-menu-button");
+
+        // engine
+        /*await waitAndClick(page, "[data-chess-src='https://images.chesscomfiles.com/uploads/v1/user/42904520.792f6adb.200x200o.9e14b951fff9.png']"); // beware, engine changes photos a lot
+        await page.waitForSelector("[class='slider-input']");
+        const slider = await page.$("[class='slider-input']");
+        const pos = await slider.asElement().boundingBox();
+        const percentage = 95; // to adjust engine level
+        await sleep(1000);
+        await page.mouse.click(pos.x + percentage * (pos.width / 100), pos.y);
+        await sleep(1000);*/
+
+        await waitAndClick(page, ".ui_v5-button-component.ui_v5-button-primary.ui_v5-button-large.selection-menu-button"); 
         
+        // automate this vvvvv
         const play = prompt("what are they playing as? ") == "b" ? "black" : "white"; 
         await waitAndClick(page, "[data-cy='" + play + "']");
 
@@ -175,6 +166,8 @@ async function feedback_game(page, game) {
         //const moves = await get_moves(page);
         //console.log(moves);
 
+
+        // add check for game aborted (surrender) on either game or page which will break
         feedback_game(page, game);
         if (await feedback_game(game, page) == false) {
             console.log("game result");
